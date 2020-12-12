@@ -26,7 +26,19 @@ const(
 )
 
 func main() {
-	f, err := os.Open("11/test")
+	lay := parseInput()
+
+	solution := solvePartOne(lay)
+	fmt.Printf("Part One -- The solution is %d\n", solution)
+
+
+	solution2 := solvePartTwo(lay)
+	fmt.Printf("Part Two -- The solution is %d\n", solution2)
+}
+
+func parseInput() Layout {
+
+	f, err := os.Open("input.txt")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -60,18 +72,11 @@ func main() {
 		y++
 	}
 
-	lay := Layout{
+	return Layout{
 		arr: area,
 		width: width,
 		height: y,
 	}
-
-	solution := solvePartOne(lay)
-	fmt.Printf("Part One -- The solution is %d\n", solution)
-
-
-	solution2 := solvePartTwo(lay)
-	fmt.Printf("Part Two -- The solution is %d\n", solution2)
 }
 
 func getAt(coord Coord, lay Layout) int {
@@ -148,7 +153,7 @@ func solvePartOne(lay Layout) int {
 	iteration := 1
 	for updated > 0 {
 		updated, lay = updateArea(lay)
-		fmt.Printf("Iteration: %d\n", iteration)
+		//fmt.Printf("Iteration: %d\n", iteration)
 		iteration++
 	}
 
@@ -232,7 +237,7 @@ func solvePartTwo(lay Layout) int {
 	iteration := 1
 	for updated > 0 {
 		updated, lay = updateAreaTwo(lay)
-		fmt.Printf("2: Iteration: %d\n", iteration)
+		//fmt.Printf("2: Iteration: %d\n", iteration)
 		iteration++
 	}
 
