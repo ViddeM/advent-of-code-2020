@@ -64,19 +64,35 @@ func solvePartTwo(numbers []int) int {
 	possibilitiesMap := make(map[int]int)
 
 	for i := len(numbers) -1; i >= 0; i-- {
-		currMax := numbers[i] + 3
-		poss := 1
+		curr := numbers[i]
+		currMax := curr + 3
+		poss := 0
 		for j := i + 1; j < len(numbers); j++ {
-			if jPoss, ok := possibilitiesMap[j]; ok {
-				if numbers[j] <= currMax {
+			jVal := numbers[j]
+			if jVal <= currMax {
+				if jPoss, ok := possibilitiesMap[jVal]; ok {
 					poss += jPoss
 				} else {
-					break
+					log.Fatal(fmt.Sprintf("not in possibilitiesMap %d (%d)", j, jVal))
 				}
+			} else {
+				break
 			}
 		}
-		possibilitiesMap[i] = poss
+
+		if poss == 0 {
+			poss = 1
+		}
+
+		possibilitiesMap[curr] = poss
 	}
 
-	return possibilitiesMap[0]
+	sum := 0
+	for i := 0; i <= 3; i++ {
+		if jPoss, ok := possibilitiesMap[i]; ok {
+			sum += jPoss
+		}
+	}
+
+	return sum
 }
