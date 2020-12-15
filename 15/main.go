@@ -5,202 +5,90 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"regexp"
 	"strconv"
 	"strings"
 )
 
-const (
-	MEM = iota
-	MASK
-)
-
-type Command struct {
-	command int
-	val int64
-	secondVal int64
-	orig string
-}
-
 func main() {
-	commands := parseInput()
+	numbers := parseInput()
 
-	solution := solvePartOne(commands)
+	solution := solvePartOne(numbers)
 	fmt.Printf("Part One -- The solution is %d\n", solution)
 
-	solution2 := solvePartTwo(commands)
+	solution2 := solvePartTwo(numbers)
 	fmt.Printf("Part Two -- The solution is %d\n", solution2)
 }
 
-func getMasks(text string) (int64, int64) {
-	andMask := strings.Replace(text, "X", "1", -1)
-	orMask := strings.Replace(text, "X", "0", -1)
-	iAndMask, err := strconv.ParseInt(andMask, 2, 64)
-	if err != nil {
-		log.Panic(err)
-	}
-	iOrMask, err := strconv.ParseInt(orMask, 2, 64)
-	if err != nil {
-		log.Panic(err)
-	}
-	return iAndMask, iOrMask
-}
-
-func parseInput() []Command {
-	f, err := os.Open("input.txt")
+func parseInput() []int {
+	f, err := os.Open("15/input.txt")
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	defer f.Close()
 
 	scanner := bufio.NewScanner(f)
 
-	var commands []Command
-
+	var numbers []int
 	for scanner.Scan() {
 		text := scanner.Text()
-		parts := strings.Split(text, " = ")
-		if strings.Contains(parts[0], "mask") {
-			andMask, orMask := getMasks(parts[1])
-			commands = append(commands, Command{
-				command: MASK,
-				val: andMask,
-				secondVal: orMask,
-				orig: parts[1],
-			})
-		} else if strings.Contains(parts[0], "mem") {
-			re := regexp.MustCompile(`\d+`)
-			matched := re.FindString(parts[0])
-
-			a, err  := strconv.ParseInt(matched, 10, 64)
+		nums := strings.Split(text, ",")
+		for _, char := range nums {
+			num, err := strconv.Atoi(char)
 			if err != nil {
 				log.Panic(err)
 			}
-			b, err := strconv.ParseInt(parts[1], 10, 64)
-			if err != nil {
-				log.Panic(err)
-			}
+			numbers = append(numbers, num)
+		}
+	}
 
-			commands = append(commands, Command{
-				command: MEM,
-				val: a,
-				secondVal: b,
-			})
+	return numbers
+}
+
+func solvePartOne(numbers []int) int {
+	spoken := make(map[int]int)
+	turn := 0
+	prev := 0
+	for i, num := range numbers {
+		if i > 0 {
+			spoken[prev] = i
+		}
+		turn += 1
+		prev = num
+	}
+
+	for turn = turn + 1; turn <= 2020; turn++ {
+		if val, exist := spoken[prev]; exist {
+			spoken[prev] = turn - 1
+			prev = turn - 1 - val
 		} else {
-			log.Fatal(fmt.Sprintf("Invalid command %s\n", text))
+			spoken[prev] = turn - 1
+			prev = 0
 		}
 	}
-
-	return commands
+	return prev
 }
 
-func solvePartOne(commands []Command) int64 {
-	memory := make(map[int64]int64)
-	var andMask, orMask int64
-	for _, command := range commands {
-		switch command.command {
-		case MEM:
-			maskedVal := command.secondVal & andMask
-			maskedVal = maskedVal | orMask
-			memory[command.val] = maskedVal
-			break
-		case MASK:
-			andMask = command.val
-			orMask = command.secondVal
-			break
-		default:
-			log.Panic(fmt.Sprintf("Invalid command %s\n", command.command))
+
+func solvePartTwo(numbers []int) int {
+	spoken := make(map[int]int)
+	turn := 0
+	prev := 0
+	for i, num := range numbers {
+		if i > 0 {
+			spoken[prev] = i
+		}
+		turn += 1
+		prev = num
+	}
+
+	for turn = turn + 1; turn <= 30000000; turn++ {
+		if val, exist := spoken[prev]; exist {
+			spoken[prev] = turn - 1
+			prev = turn - 1 - val
+		} else {
+			spoken[prev] = turn - 1
+			prev = 0
 		}
 	}
-
-	var sum int64 = 0
-	for _, val := range memory {
-		sum += val
-	}
-	return sum
-}
-
-func duplicateAt(currIndex int, number string) []string {
-	var a []string
-	numA := []rune(number)
-	numA[currIndex] = '0'
-	numB := []rune(number)
-	numB[currIndex] = '1'
-	a = append(a, string(numA))
-	a = append(a, string(numB))
-	return a
-}
-
-func getMemoryAddressesRec(mask string, number string, currIndex int) []string {
-	if currIndex == len(number) - 1 {
-		char := string(mask[currIndex])
-		if char == "X" {
-			return duplicateAt(currIndex, number)
-		} else if char == "1" {
-			num := []rune(number)
-			num[currIndex] = '1'
-			number = string(num)
-		}
-
-		var a []string
-		a = append(a, number)
-		return a
-	} else {
-		a := getMemoryAddressesRec(mask, number, currIndex + 1)
-		var c []string
-		char := string(mask[currIndex])
-		for _, num := range a {
-			if char == "X" {
-				b := duplicateAt(currIndex, num)
-				c = append(c, b...)
-			} else if char == "1" {
-				newNum := []rune(num)
-				newNum[currIndex] = '1'
-				c = append(c, string(newNum))
-			} else {
-				c = append(c, num)
-			}
-		}
-		return c
-	}
-}
-
-func getMemoryAddresses(mask string, number int64) []int64 {
-	addresses := getMemoryAddressesRec(mask, fmt.Sprintf("%036b", number), 0)
-	var iAddresses []int64
-	for _, address := range addresses {
-		val, err := strconv.ParseInt(address, 2, 64)
-		if err != nil {
-			log.Panic(err)
-		}
-		iAddresses = append(iAddresses, val)
-	}
-	return iAddresses
-}
-
-func solvePartTwo(commands []Command) int64 {
-	memory := make(map[int64]int64)
-	var mask string
-	for _, command := range commands {
-		switch command.command {
-		case MEM:
-			addresses := getMemoryAddresses(mask, command.val)
-			for _, address := range addresses {
-				memory[address] = command.secondVal
-			}
-			break
-		case MASK:
-			mask = command.orig
-			break
-		default:
-			log.Panic(fmt.Sprintf("Invalid command %s\n", command.command))
-		}
-	}
-
-	var sum int64 = 0
-	for _, val := range memory {
-		sum += val
-	}
-	return sum
+	return prev
 }
