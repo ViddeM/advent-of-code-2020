@@ -20,7 +20,7 @@ func main() {
 }
 
 func parseInput() []int {
-	f, err := os.Open("15/input.txt")
+	f, err := os.Open("input.txt")
 	if err != nil {
 		log.Fatal(err)
 	}
